@@ -221,7 +221,7 @@
         const apiKey = "AIzaSyC3Zpp_97d8EubTr9cRghOCPSIK7fTI-t4"; 
 
         async function callGemini(prompt) {
-            const apiUrl = `https://generativelen.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
             const payload = {
                 contents: [{ parts: [{ text: prompt }] }],
             };
@@ -243,7 +243,7 @@
         }
         
         async function callGeminiTTS(text) {
-            const apiUrl = `https://generativelen.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
             const payload = {
                 contents: [{ parts: [{ text: `Por favor, lee el siguiente texto en un tono claro y profesional: ${text}` }] }],
                 generationConfig: {
@@ -343,11 +343,11 @@
             const forceData = analysisData[currentForceKey];
             const cleanDetails = forceData.details.replace(/<[^>]*>?/gm, '');
 
-            const prompt = `Eres un consultor de estrategia de negocios experto en el mercado latinoamericano. Basado en el siguiente análisis de una de las 5 Fuerzas de Porter para la empresa Mipac.com.py en Paraguay, que vende termos MyHydrate importados de China, genera 3 recomendaciones estratégicas accionables. El análisis es sobre '${forceData.title}': ${cleanDetails}. Presenta las recomendaciones en una lista con viñetas (usando <li>).`;
+            const prompt = `Eres un consultor de estrategia de negocios experto en el mercado latinoamericano. Basado en el siguiente análisis de una de las 5 Fuerzas de Porter para la empresa Mipac.com.py en Paraguay, que vende termos MyHydrate importados de China, genera 3 recomendaciones estratégicas accionables. El análisis es sobre '${forceData.title}': ${cleanDetails}. Formatea tu respuesta usando Markdown (por ejemplo, usando '*' para listas y '**' para negrita).`;
             
             const recommendations = await callGemini(prompt);
             
-            recContent.innerHTML = recommendations.replace(/\n/g, '<br>');
+            recContent.innerHTML = markdownToHtml(recommendations || "No se pudieron generar recomendaciones en este momento.");
             recLoader.classList.add('hidden');
         }
 
@@ -372,11 +372,32 @@
                 audioPlayer.play();
             } else {
                  audioPlayerContainer.classList.add('hidden');
-                 alert("No se pudo generar el audio.");
+                 console.error("No se pudo generar el audio.");
             }
              audioLoader.classList.add('hidden');
         }
 
+        function markdownToHtml(md) {
+            if (!md) return '';
+            let html = md
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line) 
+                .map(line => {
+                    if (line.startsWith('* ') || line.startsWith('- ')) {
+                        return `<li class="ml-4">${line.substring(2)}</li>`;
+                    }
+                    return `<p>${line}</p>`;
+                })
+                .join('');
+            
+            if (html.includes('<li>')) {
+                html = `<ul class="list-disc space-y-2">${html.replace(/<p>/g, '').replace(/<\/p>/g, '')}</ul>`;
+            }
+
+            return html;
+        }
 
         function updateContent(forceKey) {
             const data = analysisData[forceKey];
@@ -521,4 +542,8 @@
     </script>
 </body>
 </html>
+
+
+
+
 
